@@ -20,7 +20,7 @@ public class securityConfiguration {
      return    httpSecurity.csrf(csrf->csrf.disable())
 
                 .authorizeHttpRequests(auth->auth.
-                        requestMatchers("/welcomepage").authenticated().anyRequest().permitAll())
+                        requestMatchers("/welcomepage","/register").authenticated().anyRequest().permitAll())
                 .build();
     }
 @Bean

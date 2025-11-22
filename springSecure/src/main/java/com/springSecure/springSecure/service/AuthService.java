@@ -32,7 +32,7 @@ public class AuthService {
             return  response;
         }
         UserObj userone=new UserObj();
-        BeanUtils.copyProperties(userDto,userone);
+        BeanUtils.copyProperties(userDto,userone,"id");
         userone.setPassword(encoder.encode(userDto.getPassword()));
          userRepo.save(userone);
         response.setStatusCode(200);
