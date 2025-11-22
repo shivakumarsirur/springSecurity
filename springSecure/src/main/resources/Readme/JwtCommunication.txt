@@ -1,0 +1,19 @@
+Why JWT is Stateless
+1️⃣ No session stored on the server
+With normal login (session-based auth):
+User logs in
+Server creates a session and stores user data in memory or Redis
+Client receives a JSESSIONID
+On every request, server checks its session store
+➡️ Server must keep session state
+
+With JWT
+User logs in
+Server creates a JWT containing user data (claims)
+JWT is signed with a private key
+Client stores the JWT locally (localStorage/cookies)
+On each request, client sends:
+Server does not look into any session store
+It only:
+Verifies the signature
+Reads claims (username, roles, expiry)
