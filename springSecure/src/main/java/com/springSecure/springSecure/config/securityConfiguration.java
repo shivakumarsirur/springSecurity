@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -25,11 +26,13 @@ public class securityConfiguration {
     private MyUserDetailsService myUserDetailsService;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
-     return    httpSecurity.csrf(csrf->csrf.disable())
-
+        return httpSecurity.csrf(csrf->csrf.disable())
                 .authorizeHttpRequests(auth->auth.
-                        requestMatchers("/welcomepage","/register").authenticated().anyRequest().permitAll())
-                .build();
+                        requestMatchers("/api/v1/admin/welcome").hasRole("ADMIN")
+                                .
+                        requestMatchers("/welcomepage","/register").authenticated()
+                     .anyRequest().permitAll())
+                 .httpBasic(Customizer.withDefaults()).build();
     }
 @Bean
     public PasswordEncoder passwordEncoder(){

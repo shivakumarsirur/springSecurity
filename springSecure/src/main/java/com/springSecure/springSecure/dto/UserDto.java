@@ -13,7 +13,15 @@ public class UserDto {
 
     private String password;
 
+    public String getRole() {
+        return role;
+    }
 
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    private String role;
     private String email;
 
 

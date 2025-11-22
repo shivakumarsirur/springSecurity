@@ -13,6 +13,16 @@ public class UserObj {
     @Column(name = "password")
     private String password;
 
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    @Column(name = "user_role",nullable = true)
+    private String role;
     @Column(name = "email", unique = true)
     private String email;
 

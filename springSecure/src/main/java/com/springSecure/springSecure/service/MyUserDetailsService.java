@@ -2,6 +2,7 @@ package com.springSecure.springSecure.service;
 
 import com.springSecure.springSecure.model.UserObj;
 import com.springSecure.springSecure.repository.UserRepo;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -26,6 +27,14 @@ public class MyUserDetailsService implements UserDetailsService {
             User → Spring Security representation (UserDetails)
         *
         ***/
-        return new User(byName.getName(),byName.getPassword(), Collections.emptyList());
+        String role = byName.getRole().toUpperCase(); // ADMIN, USER
+        System.out.println("User: " + byName.getName() + " Role: " + byName.getRole());
+
+        return new User(
+                byName.getName(),
+                byName.getPassword(),
+                Collections.singletonList(new SimpleGrantedAuthority(byName.getRole()))
+        );
+
     }
 }
