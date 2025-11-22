@@ -30,7 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
          if (authorization!=null & authorization.startsWith("Bearer ")){
              String substring = authorization.substring(7);
              String userName = jwtService.validateToken(substring);
-             if (userName!=null ){
+             if (userName!=null &SecurityContextHolder.getContext().getAuthentication()==null ){
                  UserDetails userDetails = myUserDetailsService.loadUserByUsername(userName);
                  // have to set the context so that urls can be accessed
                  var authtoken=new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
