@@ -2,6 +2,7 @@ package com.springSecure.springSecure.Controller;
 
 import com.springSecure.springSecure.dto.ApiResponse;
 import com.springSecure.springSecure.dto.LoginDto;
+import com.springSecure.springSecure.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class LoginController {
     @Autowired
     private AuthenticationManager authenticationManager;
+    private JwtService jwtService;
     ApiResponse<String>response=new ApiResponse<>();
-    public LoginController(AuthenticationManager authenticationManager) {
+    public LoginController(AuthenticationManager authenticationManager, JwtService jwtService) {
         this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
@@ -30,9 +33,10 @@ public class LoginController {
                 new UsernamePasswordAuthenticationToken(loginDto.getUserName(),loginDto.getPassword());
         Authentication authenticate = authenticationManager.authenticate(token);
         if (authenticate.isAuthenticated()){
+            String authTokenForJwt = jwtService.genertaeToken(loginDto.getUserName(), authenticate.getAuthorities().iterator().next().getAuthority());
             response.setStatusCode(201);
             response.setMessage("Login is success");
-            response.setData("Loggedin");
+            response.setData(authTokenForJwt);
             return  new ResponseEntity<>(response, HttpStatus.valueOf(response.getStatusCode()));
         }
         response.setData("Login failed");

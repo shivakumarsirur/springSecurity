@@ -27,7 +27,7 @@ public class MyUserDetailsService implements UserDetailsService {
             User → Spring Security representation (UserDetails)
         *
         ***/
-        String role = byName.getRole().toUpperCase(); // ADMIN, USER
+        String role = byName.getRole(); // ADMIN, USER
         System.out.println("User: " + byName.getName() + " Role: " + byName.getRole());
 
         return new User(
