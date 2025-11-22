@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -24,15 +25,20 @@ import org.springframework.security.web.SecurityFilterChain;
 public class securityConfiguration {
     @Autowired
     private MyUserDetailsService myUserDetailsService;
+    @Autowired
+    private JwtFilter jwtFilter;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
         return httpSecurity.csrf(csrf->csrf.disable())
                 .authorizeHttpRequests(auth->auth.
-                        requestMatchers("/api/v1/admin/welcome").hasRole("ADMIN")
-                                .
-                        requestMatchers("/welcomepage","/register").authenticated()
-                     .anyRequest().permitAll())
-                 .httpBasic(Customizer.withDefaults()).build();
+                  //      requestMatchers("/api/v1/admin/welcome").hasRole("ADMIN")
+                                //.
+                        requestMatchers("/welcomepage","/register","/api/v1/admin/welcome").permitAll()
+                        //.authenticated()
+                     .anyRequest().authenticated())
+                 .httpBasic(Customizer.withDefaults())
+                .addFilterBefore(jwtFilter,UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 @Bean
     public PasswordEncoder passwordEncoder(){
