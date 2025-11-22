@@ -17,3 +17,46 @@ Server does not look into any session store
 It only:
 Verifies the signature
 Reads claims (username, roles, expiry)
+
+
+| Question                            | Answer                                                                       |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| We already have JWT, why load user? | JWT is just a string; Spring Security needs an **Authentication object**.    |
+| Why call `loadUserByUsername`?      | To get **current roles/status** from DB (JWT could be outdated).             |
+| Why set `SecurityContextHolder`?    | Spring Security relies on it for **role checks and authentication**.         |
+| Is it stateful?                     | No — context is per-request, JWT carries identity, no server session needed. |
+
+1️⃣ What is SecurityContextHolder?
+SecurityContextHolder is a Spring Security class that holds the security context for the current execution/thread.
+The security context contains the Authentication object, which represents the currently authenticated user.
+Think of it like a thread-local storage for the user’s authentication info:
+SecurityContextHolder
+   └── SecurityContext
+         └── Authentication
+                 ├── principal (UserDetails)
+                 ├── credentials (password, often null)
+                 └── authorities (roles/permissions)
+Why do we need it?
+
+Spring Security relies on it for access control
+When you use @PreAuthorize("hasRole('ADMIN')") or http.authorizeHttpRequests().hasRole("ADMIN"),
+Spring Security checks the Authentication object in SecurityContextHolder to see who the user is and what roles they have.
+
+Controllers and services can access the user
+Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+String username = auth.getName();
+Collection<? extends GrantedAuthority> roles = auth.getAuthorities();
+Without setting it, getAuthentication() would return null → Spring Security thinks the user is anonymous.
+
+SecurityContextHolder.getContext().setAuthentication(authToken);
+authToken is a UsernamePasswordAuthenticationToken containing:
+principal → the authenticated user (UserDetails)
+authorities → roles for authorization
+credentials → usually null (since JWT already validated)
+This stores the authentication for the current request/thread.
+Now Spring Security knows the user is authenticated and what roles they have.
+
+4️⃣ Is it stateful?
+No — it’s per request.
+The context is cleared after the request.
+This allows JWT to remain stateless, while still giving Spring Security the information it needs.
