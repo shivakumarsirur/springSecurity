@@ -1,11 +1,15 @@
 package com.springSecure.springSecure.config;
 
+import com.springSecure.springSecure.service.MyUserDetailsService;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,6 +21,8 @@ import org.springframework.security.web.SecurityFilterChain;
 // then the configuration details are given to ioc
 
 public class securityConfiguration {
+    @Autowired
+    private MyUserDetailsService myUserDetailsService;
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity){
      return    httpSecurity.csrf(csrf->csrf.disable())
@@ -32,6 +38,13 @@ public class securityConfiguration {
 @Bean
 public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration){
        return configuration.getAuthenticationManager();
+}
+@Bean
+    public AuthenticationProvider authenticationProvider(){
+    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(myUserDetailsService);
+    provider.setPasswordEncoder(passwordEncoder());
+    return provider;
+    
 }
 
 }

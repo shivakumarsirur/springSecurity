@@ -1,0 +1,170 @@
+UsernamePasswordAuthenticationToken authRequest =
+        new UsernamePasswordAuthenticationToken(username, password);
+    | Object        | Class                                 | Fields                                                                       |
+    | ------------- | ------------------------------------- | ---------------------------------------------------------------------------- |
+    | `authRequest` | `UsernamePasswordAuthenticationToken` | `principal = "alice"`, `credentials = "mypassword"`, `authenticated = false` |
+
+    This is an unauthenticated token, just wrapping the raw login data.
+
+    Authentication authentication = this.getAuthenticationManager().authenticate(authRequest);
+Calling getAuthenticationManager() just returns that instance.
+
+AuthenticationManager mgr = getAuthenticationManager();
+System.out.println(mgr.getClass()); // prints: ProviderManager
+No authentication happens yet; it’s just giving you the object to use.
+3️⃣ What “returns the ProviderManager instance” means
+Before calling authenticate():
+You now have a reference to the object that knows how to authenticate users.
+You can call:
+mgr.authenticate(token);
+Inside ProviderManager:
+It loops through AuthenticationProviders
+Finds one that supports your token type
+Calls provider.authenticate(token)
+Returns an authenticated token
+
+
+Input: authRequest (the token)
+Output: Authentication (authenticated token)
+
+| Step                  | Class/Object                          | Fields/Data                                                                          |
+| --------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
+| API login             | raw request                           | username="alice", password="mypassword"                                              |
+| Token creation        | `UsernamePasswordAuthenticationToken` | principal="alice", credentials="mypassword", authenticated=false                     |
+| AuthenticationManager | `ProviderManager`                     | loops providers                                                                      |
+| Delegation            | `DaoAuthenticationProvider`           | supports token type, authenticate(token) called                                      |
+| Load user             | `UserDetailsService`                  | fetch UserObj from DB                                                                |
+| Compare password      | `PasswordEncoder`                     | matches presented vs stored                                                          |
+| Authenticated token   | `UsernamePasswordAuthenticationToken` | principal=UserDetails, credentials=null, authorities=[ROLE_USER], authenticated=true |
+| Return to API         | `Authentication result`               | fully authenticated object                                                           |
+
+
+
+API token (username + password)
+        |
+        v
+ProviderManager.authenticate(token)   <-- high-level delegation
+        |
+        v
+DaoAuthenticationProvider.authenticate(token)  <-- does the real authentication
+        |
+        +--> Calls UserDetailsService.loadUserByUsername(username)
+        +--> Compares passwords
+        +--> Returns authenticated token
+        |
+        v
+ProviderManager returns authenticated token
+        |
+        v
+Your API/controller gets the authenticated result
+
+
+
+
+API login request → token (UsernamePasswordAuthenticationToken)
+        |
+        v
+authenticationManager.authenticate(token)  <-- actually a ProviderManager
+        |
+        v
+loops providers → finds DaoAuthenticationProvider
+        |
+        v
+DaoAuthenticationProvider.authenticate(token)  <-- real authentication
+        |
+        v
+calls myUserDetailsService.loadUserByUsername(username)
+        |
+        v
+checks password, creates authenticated token
+        |
+        v
+returns token back to ProviderManager → returns to your API
+
+Step 1: API receives credentials
+username = "alice"
+password = "mypassword"
+UsernamePasswordAuthenticationToken token =
+        new UsernamePasswordAuthenticationToken("alice", "mypassword");
+Token object fields:| Field         | Value        |
+                    | ------------- | ------------ |
+                    | principal     | "alice"      |
+                    | credentials   | "mypassword" |
+                    | authenticated | false        |
+Purpose: Wrap API credentials into a standard Spring Security object.
+
+Step 2: Token passed to AuthenticationManager
+Authentication result = authenticationManager.authenticate(token);
+authenticationManager is a ProviderManager created automatically by Spring Boot.
+Its authenticate() method is called.
+
+Step 3: ProviderManager loops over providers
+Inside ProviderManager.authenticate():
+for (AuthenticationProvider provider : providers) {
+    if (provider.supports(token.getClass())) {
+        return provider.authenticate(token);  // ✅ delegation
+    }
+}
+Providers list: contains your DaoAuthenticationProvider.
+supports() checks if UsernamePasswordAuthenticationToken is supported → returns true.
+Delegation: DaoAuthenticationProvider.authenticate(token) is called.
+
+Step 4: DaoAuthenticationProvider.authenticate()
+String username = token.getName();                // "alice"
+String presentedPassword = (String) token.getCredentials(); // "mypassword"
+
+// Load user from your UserDetailsService
+UserDetails user = myUserDetailsService.loadUserByUsername(username);
+
+// Check password
+if (!passwordEncoder.matches(presentedPassword, user.getPassword())) {
+    throw new BadCredentialsException("Bad credentials");
+}
+
+// Create authenticated token
+return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+Step 4a: loadUserByUsername is called
+Called exactly once per login attempt.
+Input: username = "alice" (from token)
+Your service queries the DB:
+UserObj byName = userRepo.findByName(username);
+DB returns UserObj:
+| Field    | Value               |
+| -------- | ------------------- |
+| name     | "alice"             |
+| password | "encodedDbPassword" |
+| roles    | []                  |
+
+UserDetails object created:
+new User(byName.getName(), byName.getPassword(), Collections.emptyList());
+UserDetails fields:
+| Field       | Value               |
+| ----------- | ------------------- |
+| username    | "alice"             |
+| password    | "encodedDbPassword" |
+| authorities | []                  |
+This object now represents the stored user data.
+Step 4b: Password check
+passwordEncoder.matches("mypassword", "encodedDbPassword")
+Compares API-provided password with stored encoded password.
+If it matches, proceed; otherwise throw BadCredentialsException.
+
+Step 4c: Create authenticated token
+new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+| Field         | Value                |
+| ------------- | -------------------- |
+| principal     | `UserDetails` object |
+| credentials   | null (erased)        |
+| authorities   | []                   |
+| authenticated | true                 |
+
+Step 5: Return authenticated token
+DaoAuthenticationProvider returns this token to ProviderManager.
+ProviderManager.authenticate() returns it to your API controller:
+Authentication result = authenticationManager.authenticate(token);
+result now contains:
+| Field             | Value              |
+| ----------------- | ------------------ |
+| isAuthenticated() | true               |
+| getPrincipal()    | UserDetails object |
+| getAuthorities()  | []                 |
